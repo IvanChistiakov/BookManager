@@ -2,9 +2,6 @@ using System;
 
 namespace BookManager
 {
-
-    // Handles business operations for books.
-    // Test change in feature branch.
     class BookService
     {
         private readonly IBookRepository _repository;
