@@ -2,6 +2,8 @@ using System;
 
 namespace BookManager
 {
+
+    // Handles business operations for books.
     class BookService
     {
         private readonly IBookRepository _repository;
