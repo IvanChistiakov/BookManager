@@ -6,6 +6,13 @@ namespace BookManager
     {
         private readonly List<Book> _books = new();
 
+        private readonly DatabaseConnection _databaseConnection;
+
+        public BookRepository(DatabaseConnection databaseConnection)
+        {
+            _databaseConnection = databaseConnection;
+        }
+
         public void AddBook(Book book)
         {
             _books.Add(book);

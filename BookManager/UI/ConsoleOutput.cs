@@ -165,5 +165,10 @@ namespace BookManager
                 PrintBook(book);
             }
         }
+
+        public void ShowApplicationConfigurationError(string message)
+        {
+            Console.WriteLine($"Application configuration error: {message}");
+        }
     }
 }
