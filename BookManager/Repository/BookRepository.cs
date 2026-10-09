@@ -1,4 +1,5 @@
 using System;
+using Npgsql;
 
 namespace BookManager
 {
@@ -20,7 +21,43 @@ namespace BookManager
 
         public IReadOnlyList<Book> GetAll()
         {
-            return _books;
+            List<Book> books = new();
+
+            using NpgsqlConnection connection = _databaseConnection.CreateConnection();
+
+            connection.Open();
+
+            string sql = """
+                SELECT id, title, author, summary, price, written_at
+                FROM books;
+                """;
+
+            using NpgsqlCommand command = new(sql, connection);
+
+            using NpgsqlDataReader reader = command.ExecuteReader();
+
+            while (reader.Read())
+            {
+                int id = reader.GetInt32(reader.GetOrdinal("id"));
+
+                string title = reader.GetString(reader.GetOrdinal("title"));
+
+                string author = reader.GetString(reader.GetOrdinal("author"));
+
+                string? summary = reader.IsDBNull(reader.GetOrdinal("summary"))
+                    ? null
+                    : reader.GetString(reader.GetOrdinal("summary"));
+
+                decimal price = reader.GetDecimal(reader.GetOrdinal("price"));
+
+                DateTime writtenAt = reader.GetDateTime(reader.GetOrdinal("written_at"));
+
+                Book book = new(id, title, author, price, writtenAt, summary);
+
+                books.Add(book);
+            }
+
+            return books;
         }
 
         public Book? GetBookById(int id)
