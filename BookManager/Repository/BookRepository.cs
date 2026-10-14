@@ -30,7 +30,7 @@ namespace BookManager
             string sql = """
                 SELECT id, title, author, summary, price, written_at
                 FROM books;
-                """;
+            """;
 
             using NpgsqlCommand command = new(sql, connection);
 
@@ -38,23 +38,7 @@ namespace BookManager
 
             while (reader.Read())
             {
-                int id = reader.GetInt32(reader.GetOrdinal("id"));
-
-                string title = reader.GetString(reader.GetOrdinal("title"));
-
-                string author = reader.GetString(reader.GetOrdinal("author"));
-
-                string? summary = reader.IsDBNull(reader.GetOrdinal("summary"))
-                    ? null
-                    : reader.GetString(reader.GetOrdinal("summary"));
-
-                decimal price = reader.GetDecimal(reader.GetOrdinal("price"));
-
-                DateTime writtenAt = reader.GetDateTime(reader.GetOrdinal("written_at"));
-
-                Book book = new(id, title, author, price, writtenAt, summary);
-
-                books.Add(book);
+                books.Add(ReadBook(reader));
             }
 
             return books;
@@ -62,61 +46,112 @@ namespace BookManager
 
         public Book? GetBookById(int id)
         {
-            foreach (var book in _books)
+            using NpgsqlConnection connection = _databaseConnection.CreateConnection();
+
+            connection.Open();
+
+            string sql = """
+                SELECT id, title, author, summary, price, written_at
+                FROM books 
+                WHERE id = @id;
+            """;
+
+            using NpgsqlCommand command = new(sql, connection);
+
+            command.Parameters.AddWithValue("id", id);
+
+            using NpgsqlDataReader reader = command.ExecuteReader();
+
+            if (!reader.Read())
             {
-                if (book.Id == id)
-                {
-                    return book;
-                }
+                return null;
             }
 
-            return null;
+            return ReadBook(reader);
         }
 
         public IReadOnlyList<Book> GetBooksByTitle(string title)
         {
-            List<Book> result = new();
+            List<Book> books = new();
 
-            foreach (var book in _books)
+            using NpgsqlConnection connection = _databaseConnection.CreateConnection();
+
+            connection.Open();
+
+            string sql = """
+                SELECT id, title, author, summary, price, written_at
+                FROM books
+                WHERE title = @title;
+            """;
+
+            using NpgsqlCommand command = new(sql, connection);
+
+            command.Parameters.AddWithValue("title", title);
+
+            using NpgsqlDataReader reader = command.ExecuteReader();
+
+            while (reader.Read())
             {
-                if (book.Title == title)
-                {
-                    result.Add(book);
-                }
+                books.Add(ReadBook(reader));
             }
 
-            return result;
+            return books;
         }
 
         public IReadOnlyList<Book> GetBooksByAuthor(string author)
         {
-            List<Book> result = new();
+            List<Book> books = new();
 
-            foreach (var book in _books)
+            using NpgsqlConnection connection = _databaseConnection.CreateConnection();
+
+            connection.Open();
+
+            string sql = """
+                SELECT id, title, author, summary, price, written_at
+                FROM books
+                WHERE author = @author;
+            """;
+
+            using NpgsqlCommand command = new(sql, connection);
+
+            command.Parameters.AddWithValue("author", author);
+
+            using NpgsqlDataReader reader = command.ExecuteReader();
+
+            while (reader.Read())
             {
-                if (book.Author == author)
-                {
-                    result.Add(book);
-                }
+                books.Add(ReadBook(reader));
             }
 
-            return result;
+            return books;
         }
 
         public IReadOnlyList<Book> GetBooksBySummaryKeyword(string keyword)
         {
-            List<Book> result = new();
+            List<Book> books = new();
 
-            foreach (var book in _books)
+            using NpgsqlConnection connection = _databaseConnection.CreateConnection();
+
+            connection.Open();
+
+            string sql = """
+                SELECT id, title, author, summary, price, written_at
+                FROM books
+                WHERE summary ILIKE @keyword;
+            """;
+
+            using NpgsqlCommand command = new(sql, connection);
+
+            command.Parameters.AddWithValue("keyword", $"%{keyword}%");
+
+            using NpgsqlDataReader reader = command.ExecuteReader();
+
+            while (reader.Read())
             {
-                if (book.Summary != null &&
-                    book.Summary.Contains(keyword, StringComparison.OrdinalIgnoreCase))
-                {
-                    result.Add(book);
-                }
+                books.Add(ReadBook(reader));
             }
 
-            return result;
+            return books;
         }
 
         public IReadOnlyList<Book> GetBooksByPriceRange(decimal minPrice, decimal maxPrice)
@@ -152,6 +187,25 @@ namespace BookManager
         public bool DeleteBook(int id)
         {
             return _books.RemoveAll(book => book.Id == id) > 0;
+        }
+
+        private Book ReadBook(NpgsqlDataReader reader)
+        {
+            int id = reader.GetInt32(reader.GetOrdinal("id"));
+
+            string title = reader.GetString(reader.GetOrdinal("title"));
+
+            string author = reader.GetString(reader.GetOrdinal("author"));
+
+            string? summary = reader.IsDBNull(reader.GetOrdinal("summary"))
+            ? null
+            : reader.GetString(reader.GetOrdinal("summary"));
+
+            decimal price = reader.GetDecimal(reader.GetOrdinal("price"));
+
+            DateTime writtenAt = reader.GetDateTime(reader.GetOrdinal("written_at"));
+
+            return new(id, title, author, price, writtenAt, summary);
         }
     }
 }
