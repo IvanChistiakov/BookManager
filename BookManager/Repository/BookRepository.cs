@@ -40,7 +40,7 @@ namespace BookManager
 
             int id = (int)command.ExecuteScalar()!;
 
-            return new Book(id, book.Title, book.Author, book.Price, book.WrittenAt, book.Summary);
+            return new Book(id, book.Title, book.Author, book.Price, book.WrittenAt, book.Summary, book.IsDeleted);
         }
 
         public IReadOnlyList<Book> GetAll()
@@ -52,8 +52,9 @@ namespace BookManager
             connection.Open();
 
             string sql = """
-                SELECT id, title, author, summary, price, written_at
-                FROM books;
+                SELECT id, title, author, summary, price, written_at, is_deleted
+                FROM books
+                WHERE is_deleted = FALSE;
             """;
 
             using NpgsqlCommand command = new(sql, connection);
@@ -75,9 +76,10 @@ namespace BookManager
             connection.Open();
 
             string sql = """
-                SELECT id, title, author, summary, price, written_at
+                SELECT id, title, author, summary, price, written_at, is_deleted
                 FROM books 
-                WHERE id = @id;
+                WHERE id = @id
+                AND is_deleted = FALSE;
             """;
 
             using NpgsqlCommand command = new(sql, connection);
@@ -103,9 +105,10 @@ namespace BookManager
             connection.Open();
 
             string sql = """
-                SELECT id, title, author, summary, price, written_at
+                SELECT id, title, author, summary, price, written_at, is_deleted
                 FROM books
-                WHERE title ILIKE @title;
+                WHERE title ILIKE @title
+                AND is_deleted = FALSE;
             """;
 
             using NpgsqlCommand command = new(sql, connection);
@@ -131,9 +134,10 @@ namespace BookManager
             connection.Open();
 
             string sql = """
-                SELECT id, title, author, summary, price, written_at
+                SELECT id, title, author, summary, price, written_at, is_deleted
                 FROM books
-                WHERE author ILIKE @author;
+                WHERE author ILIKE @author
+                AND is_deleted = FALSE;
             """;
 
             using NpgsqlCommand command = new(sql, connection);
@@ -159,9 +163,10 @@ namespace BookManager
             connection.Open();
 
             string sql = """
-                SELECT id, title, author, summary, price, written_at
+                SELECT id, title, author, summary, price, written_at, is_deleted
                 FROM books
-                WHERE summary ILIKE @keyword;
+                WHERE summary ILIKE @keyword
+                AND is_deleted = FALSE;
             """;
 
             using NpgsqlCommand command = new(sql, connection);
@@ -187,10 +192,11 @@ namespace BookManager
             connection.Open();
 
             string sql = """
-                SELECT id, title, author, summary, price, written_at
+                SELECT id, title, author, summary, price, written_at, is_deleted
                 FROM books
                 WHERE price >= @minPrice
-                AND price <= @maxPrice;
+                AND price <= @maxPrice
+                AND is_deleted = FALSE;
             """;
 
             using NpgsqlCommand command = new(sql, connection);
@@ -222,10 +228,11 @@ namespace BookManager
             connection.Open();
 
             string sql = """
-                SELECT id, title, author, summary, price, written_at
+                SELECT id, title, author, summary, price, written_at, is_deleted
                 FROM books
                 WHERE written_at >= @startDate
-                AND written_at < @endDate;
+                AND written_at < @endDate
+                AND is_deleted = FALSE;
             """;
 
             using NpgsqlCommand command = new(sql, connection);
@@ -257,9 +264,10 @@ namespace BookManager
             connection.Open();
 
             string sql = """
-                DELETE FROM books
+                UPDATE books
+                SET is_deleted = TRUE
                 WHERE id = @id
-                RETURNING id;
+                AND is_deleted = FALSE;
             """;
 
             using NpgsqlCommand command = new(sql, connection);
@@ -287,7 +295,9 @@ namespace BookManager
 
             DateTime writtenAt = reader.GetDateTime(reader.GetOrdinal("written_at"));
 
-            return new(id, title, author, price, writtenAt, summary);
+            bool isDeleted = reader.GetBoolean(reader.GetOrdinal("is_deleted"));
+
+            return new(id, title, author, price, writtenAt, summary, isDeleted);
         }
     }
 }

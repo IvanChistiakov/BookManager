@@ -14,6 +14,8 @@ namespace BookManager
 
         public int Id { get; }
 
+        public bool IsDeleted { get; private set; }
+
         public string Title { get; private set; } = string.Empty;
 
         public string Author { get; private set; } = string.Empty;
@@ -24,9 +26,10 @@ namespace BookManager
 
         public DateTime WrittenAt { get; private set; }
 
-        public Book(int id, string title, string author, decimal price, DateTime writtenAt, string? summary = null)
+        public Book(int id, string title, string author, decimal price, DateTime writtenAt, string? summary = null, bool isDeleted = false)
         {
             Id = id;
+            IsDeleted = isDeleted;
 
             ChangeTitle(title);
 
