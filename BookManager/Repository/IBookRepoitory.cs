@@ -4,7 +4,7 @@ namespace BookManager
 {
     interface IBookRepository
     {
-        void AddBook(Book book);
+        Book AddBook(Book book);
 
         IReadOnlyList<Book> GetAll();
 

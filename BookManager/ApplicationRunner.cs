@@ -33,9 +33,7 @@ namespace BookManager
 
             IBookRepository repository = new BookRepository(databaseConnection);
 
-            IdGenerator idGenerator = new();
-
-            BookService service = new(repository, idGenerator);
+            BookService service = new(repository);
 
             ConsoleInput input = new(_output);
 

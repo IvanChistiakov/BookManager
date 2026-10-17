@@ -14,9 +14,33 @@ namespace BookManager
             _databaseConnection = databaseConnection;
         }
 
-        public void AddBook(Book book)
+        public Book AddBook(Book book)
         {
-            _books.Add(book);
+            using NpgsqlConnection connection = _databaseConnection.CreateConnection();
+
+            connection.Open();
+
+            string sql = """
+                INSERT INTO books (title, author, summary, price, written_at)
+                VALUES (@title, @author, @summary, @price, @writtenAt)
+                RETURNING id;
+            """;
+
+            using NpgsqlCommand command = new(sql, connection);
+
+            command.Parameters.AddWithValue("title", book.Title);
+
+            command.Parameters.AddWithValue("author", book.Author);
+
+            command.Parameters.AddWithValue("summary", (object?)book.Summary ?? DBNull.Value);
+
+            command.Parameters.AddWithValue("price", book.Price);
+
+            command.Parameters.AddWithValue("writtenAt", book.WrittenAt);
+
+            int id = (int)command.ExecuteScalar()!;
+
+            return new Book(id, book.Title, book.Author, book.Price, book.WrittenAt, book.Summary);
         }
 
         public IReadOnlyList<Book> GetAll()
@@ -81,7 +105,7 @@ namespace BookManager
             string sql = """
                 SELECT id, title, author, summary, price, written_at
                 FROM books
-                WHERE title = @title;
+                WHERE title ILIKE @title;
             """;
 
             using NpgsqlCommand command = new(sql, connection);
@@ -109,7 +133,7 @@ namespace BookManager
             string sql = """
                 SELECT id, title, author, summary, price, written_at
                 FROM books
-                WHERE author = @author;
+                WHERE author ILIKE @author;
             """;
 
             using NpgsqlCommand command = new(sql, connection);
@@ -156,37 +180,95 @@ namespace BookManager
 
         public IReadOnlyList<Book> GetBooksByPriceRange(decimal minPrice, decimal maxPrice)
         {
-            List<Book> result = new();
+            List<Book> books = new();
 
-            foreach (var book in _books)
+            using NpgsqlConnection connection = _databaseConnection.CreateConnection();
+
+            connection.Open();
+
+            string sql = """
+                SELECT id, title, author, summary, price, written_at
+                FROM books
+                WHERE price >= @minPrice
+                AND price <= @maxPrice;
+            """;
+
+            using NpgsqlCommand command = new(sql, connection);
+
+            command.Parameters.AddWithValue("minPrice", minPrice);
+
+            command.Parameters.AddWithValue("maxPrice", maxPrice);
+
+            using NpgsqlDataReader reader = command.ExecuteReader();
+
+            while (reader.Read())
             {
-                if (book.Price >= minPrice && book.Price <= maxPrice)
-                {
-                    result.Add(book);
-                }
+                books.Add(ReadBook(reader));
             }
 
-            return result;
+            return books;
         }
 
         public IReadOnlyList<Book> GetBooksByYearRange(int minYear, int maxYear)
         {
-            List<Book> result = new();
+            List<Book> books = new();
 
-            foreach (var book in _books)
+            DateTime startDate = new(minYear, 1, 1);
+
+            DateTime endDate = new(maxYear + 1, 1, 1);
+
+            using NpgsqlConnection connection = _databaseConnection.CreateConnection();
+
+            connection.Open();
+
+            string sql = """
+                SELECT id, title, author, summary, price, written_at
+                FROM books
+                WHERE written_at >= @startDate
+                AND written_at < @endDate;
+            """;
+
+            using NpgsqlCommand command = new(sql, connection);
+
+            command.Parameters.AddWithValue("startDate", startDate);
+
+            command.Parameters.AddWithValue("endDate", endDate);
+
+            using NpgsqlDataReader reader = command.ExecuteReader();
+
+            while (reader.Read())
             {
-                if (book.WrittenAt.Year >= minYear && book.WrittenAt.Year <= maxYear)
-                {
-                    result.Add(book);
-                }
+                books.Add(ReadBook(reader));
             }
 
-            return result;
+            return books;
         }
 
         public bool DeleteBook(int id)
         {
-            return _books.RemoveAll(book => book.Id == id) > 0;
+            if (id <= 0)
+            {
+                return false;
+            }
+
+
+            using NpgsqlConnection connection = _databaseConnection.CreateConnection();
+
+            connection.Open();
+
+            string sql = """
+                DELETE FROM books
+                WHERE id = @id
+                RETURNING id;
+            """;
+
+            using NpgsqlCommand command = new(sql, connection);
+
+            command.Parameters.AddWithValue("id", id);
+
+            int deletedRows = command.ExecuteNonQuery();
+
+            return deletedRows > 0;
         }
 
         private Book ReadBook(NpgsqlDataReader reader)

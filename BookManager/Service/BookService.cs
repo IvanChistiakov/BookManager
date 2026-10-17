@@ -6,20 +6,14 @@ namespace BookManager
     {
         private readonly IBookRepository _repository;
 
-        private readonly IdGenerator _idGenerator;
-
-        public BookService(IBookRepository repository, IdGenerator idGenerator)
+        public BookService(IBookRepository repository)
         {
             _repository = repository;
-
-            _idGenerator = idGenerator;
         }
 
         public void CreateBook(string title, string author, decimal price, DateTime writtenAt, string? summary = null)
         {
-            int id = _idGenerator.GetNextId();
-
-            Book book = new(id, title, author, price, writtenAt, summary);
+            Book book = new(0, title, author, price, writtenAt, summary);
 
             _repository.AddBook(book);
         }

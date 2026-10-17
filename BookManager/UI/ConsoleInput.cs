@@ -149,7 +149,7 @@ namespace BookManager
                 _output.ShowEnterMinYear();
 
                 if (int.TryParse(Console.ReadLine(), out int minYear)
-                && minYear >= 0)
+                && minYear >= 1)
                 {
                     return minYear;
                 }
@@ -165,7 +165,7 @@ namespace BookManager
                 _output.ShowEnterMaxYear();
 
                 if (int.TryParse(Console.ReadLine(), out int maxYear)
-                && maxYear >= 0)
+                && maxYear >= 1)
                 {
                     return maxYear;
                 }
